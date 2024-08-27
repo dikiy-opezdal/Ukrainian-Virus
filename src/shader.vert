@@ -1,6 +1,7 @@
 #version 330 core
 
 layout(location=0) in vec2 a_pos;
+
 uniform vec2 u_offset;
 uniform vec2 u_size;
 uniform vec2 u_resolution;

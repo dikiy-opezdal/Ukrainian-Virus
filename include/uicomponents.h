@@ -35,10 +35,10 @@ extern int rect_list_len;
 extern btn_t **btn_list;
 extern int btn_list_len;
 
-void init_uicomponents();
 void terminate_uicomponents();
-void init_rect(rect_t *rect);
-void init_btn(btn_t *btn);
 void set_btn_state(btn_t *btn, int state);
+void init_btn(btn_t *btn);
+void init_rect(rect_t *rect);
+void init_uicomponents();
 
 #endif

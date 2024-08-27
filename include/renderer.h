@@ -3,10 +3,10 @@
 
 extern float scr_width, scr_height;
 extern GLFWwindow *window;
-extern int stop_flag;
+extern int running;
 
-int init_renderer();
-void render();
 void terminate_renderer();
+void render();
+int init_renderer();
 
 #endif
