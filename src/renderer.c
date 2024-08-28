@@ -1,7 +1,7 @@
 #include <stdio.h>
+#include <string.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include <shaders.h>
@@ -25,13 +25,48 @@ void terminate_renderer() {
 void draw_rect(rect_t *rect) {
     glUniform2f(glGetUniformLocation(shader_program, "u_offset"), rect->pos.x, rect->pos.y);
     glUniform2f(glGetUniformLocation(shader_program, "u_size"), rect->size.x, rect->size.y);
-    glUniform3f(glGetUniformLocation(shader_program, "u_color"), rect->color.x, rect->color.y, rect->color.z);
+    glUniform4f(glGetUniformLocation(shader_program, "u_color"), rect->color.x, rect->color.y, rect->color.z, rect->color.w);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
+void draw_text(vec2_t *pos, text_t *text) {
+    glUniform2f(glGetUniformLocation(shader_program, "u_size"), text->font_size.x, text->font_size.y);
+    glUniform4f(glGetUniformLocation(shader_program, "u_color"), text->font_color.x, text->font_color.y, text->font_color.z, text->font_color.w);
+    
+    glUniform1f(glGetUniformLocation(shader_program, "u_alpha"), 1.0f);
+    
+    int len = strlen(text->text);
+    for (int i = 0; i < len; i++) {
+        glUniform2f(glGetUniformLocation(shader_program, "u_offset"), pos->x + text->font_size.x * i, pos->y);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+
+    glUniform1f(glGetUniformLocation(shader_program, "u_alpha"), 0.0f);
+}
+
+void draw_lbl(lbl_t *lbl) {
+    draw_rect(&lbl->base);
+
+    glUniform1f(glGetUniformLocation(shader_program, "u_alpha"), 1.0f);
+
+    glUniform2f(glGetUniformLocation(shader_program, "u_size"), lbl->text.font_size.x, lbl->text.font_size.y);
+    glUniform4f(glGetUniformLocation(shader_program, "u_color"), lbl->text.font_color.x, lbl->text.font_color.y, lbl->text.font_color.z, lbl->text.font_color.w);
+    
+    int len = strlen(lbl->text.text);
+    int newlines = 0;
+    for (int i = 0; i < len; i++) {
+        if (lbl->text.text[i] == '\n') newlines++;
+        glUniform2f(glGetUniformLocation(shader_program, "u_offset"), lbl->base.pos.x + lbl->text.font_size.x * (i % (int)((lbl->base.pos.x + lbl->base.size.x - lbl->text.font_size.x) / lbl->text.font_size.x)), lbl->base.pos.y + lbl->text.font_size.y * (int)(i / (int)((lbl->base.pos.x + lbl->base.size.x - lbl->text.font_size.x) / lbl->text.font_size.x) + newlines));
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+
+    glUniform1f(glGetUniformLocation(shader_program, "u_alpha"), 0.0f);
+}
+
 void draw_btn(btn_t *btn) {
     draw_rect(&btn->base);
+    draw_text(&(vec2_t){btn->base.pos.x + btn->base.size.x / 2.0f - (btn->text.font_size.x * strlen(btn->text.text)) / 2.0f, btn->base.pos.y + btn->base.size.y / 2.0f - btn->text.font_size.y / 2.0f}, &btn->text);
 }
 
 void render() {
@@ -39,6 +74,7 @@ void render() {
 
     glClear(GL_COLOR_BUFFER_BIT);
     for (int i = 0; i < rect_list_len; i++) draw_rect(rect_list[i]);
+    for (int i = 0; i < lbl_list_len; i++) draw_lbl(lbl_list[i]);
     for (int i = 0; i < btn_list_len; i++) draw_btn(btn_list[i]);
 
     glfwSwapBuffers(window);
@@ -181,6 +217,8 @@ int init_renderer() {
 
     load_texture("assets/font_atlas.png");
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     running = 1;
