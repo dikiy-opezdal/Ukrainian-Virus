@@ -54,7 +54,7 @@ int main() {
         terminate();
         return -1;
     }
-
+    
     while(running && !glfwWindowShouldClose(window)) {
         render();
     }

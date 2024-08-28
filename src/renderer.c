@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 #include <shaders.h>
 #include <uicomponents.h>
@@ -42,14 +44,39 @@ void render() {
     glfwSwapBuffers(window);
 }
 
+unsigned int load_texture(char *filepath) {
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    int width, height, channels;
+    unsigned char *data = stbi_load(filepath, &width, &height, &channels, 0); 
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else {
+        printf("Failed to load texture image %s", filepath);
+    }
+    stbi_image_free(data);
+
+    return texture;
+}
+
 void init_buffers() {
     float vertex_data[] = {
-        0.0f,  1.0f,
-        0.0f,  0.0f,
-        1.0f,  0.0f,
-        1.0f,  0.0f,
-        1.0f,  1.0f,
-        0.0f,  1.0f,
+//      a_pos          a_texcoord
+        0.0f,  1.0f,   0.0f, 1.0f,
+        0.0f,  0.0f,   0.0f, 0.0f,
+        1.0f,  0.0f,   1.0f, 0.0f,
+        1.0f,  0.0f,   1.0f, 0.0f,
+        1.0f,  1.0f,   1.0f, 1.0f,
+        0.0f,  1.0f,   0.0f, 1.0f,
     };
 
     unsigned int VAO;
@@ -61,10 +88,13 @@ void init_buffers() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     glUniform2f(glGetUniformLocation(shader_program, "u_resolution"), scr_width, scr_height);
+    glUniform1f(glGetUniformLocation(shader_program, "u_alpha"), 0.0f);
 }
 
 void cursor_position_callback(GLFWwindow *window, double x, double y) {
@@ -148,6 +178,8 @@ int init_renderer() {
     glUseProgram(shader_program);
 
     init_buffers();
+
+    load_texture("assets/font_atlas.png");
 
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
