@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb_image.h>
@@ -9,7 +10,7 @@
 
 #include <renderer.h>
 
-float scr_width = 500.0f;
+float scr_width = 600.0f;
 float scr_height = 200.0f;
 
 GLFWwindow *window;
@@ -32,13 +33,14 @@ void draw_rect(rect_t *rect) {
 
 void draw_text(vec2_t *pos, text_t *text) {
     glUniform2f(glGetUniformLocation(shader_program, "u_size"), text->font_size.x, text->font_size.y);
-    glUniform4f(glGetUniformLocation(shader_program, "u_color"), text->font_color.x, text->font_color.y, text->font_color.z, text->font_color.w);
+    glUniform4f(glGetUniformLocation(shader_program, "u_text_color"), text->font_color.x, text->font_color.y, text->font_color.z, text->font_color.w);
     
     glUniform1f(glGetUniformLocation(shader_program, "u_alpha"), 1.0f);
     
     int len = strlen(text->text);
     for (int i = 0; i < len; i++) {
         glUniform2f(glGetUniformLocation(shader_program, "u_offset"), pos->x + text->font_size.x * i, pos->y);
+        glUniform1f(glGetUniformLocation(shader_program, "u_texid"), (float)toupper(text->text[i]) - 32.0f);
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
 
@@ -46,19 +48,32 @@ void draw_text(vec2_t *pos, text_t *text) {
 }
 
 void draw_lbl(lbl_t *lbl) {
-    draw_rect(&lbl->base);
+    rect_t base = lbl->base;
+    text_t text = lbl->text;
+
+    draw_rect(&base);
 
     glUniform1f(glGetUniformLocation(shader_program, "u_alpha"), 1.0f);
 
-    glUniform2f(glGetUniformLocation(shader_program, "u_size"), lbl->text.font_size.x, lbl->text.font_size.y);
-    glUniform4f(glGetUniformLocation(shader_program, "u_color"), lbl->text.font_color.x, lbl->text.font_color.y, lbl->text.font_color.z, lbl->text.font_color.w);
+    glUniform2f(glGetUniformLocation(shader_program, "u_size"), text.font_size.x, text.font_size.y);
+    glUniform4f(glGetUniformLocation(shader_program, "u_text_color"), text.font_color.x, text.font_color.y, text.font_color.z, text.font_color.w);
     
-    int len = strlen(lbl->text.text);
+    int len = strlen(text.text);
     int newlines = 0;
+    int line_len = (int)(base.size.x / text.font_size.x - 1);
+    int j = 0;
     for (int i = 0; i < len; i++) {
-        if (lbl->text.text[i] == '\n') newlines++;
-        glUniform2f(glGetUniformLocation(shader_program, "u_offset"), lbl->base.pos.x + lbl->text.font_size.x * (i % (int)((lbl->base.pos.x + lbl->base.size.x - lbl->text.font_size.x) / lbl->text.font_size.x)), lbl->base.pos.y + lbl->text.font_size.y * (int)(i / (int)((lbl->base.pos.x + lbl->base.size.x - lbl->text.font_size.x) / lbl->text.font_size.x) + newlines));
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        if ((j / line_len + newlines + 1) * text.font_size.y > (base.size.y)) break;
+        if (text.text[i] == '\n') {
+            newlines++;
+            j -= j % line_len + 1;
+        }
+        else if (text.text[i] != ' ') {
+            glUniform2f(glGetUniformLocation(shader_program, "u_offset"), base.pos.x + (j % line_len) * text.font_size.x + text.font_size.x * 0.25f, base.pos.y + (j / line_len + newlines) * text.font_size.y + text.font_size.y * 0.25f);
+            glUniform1f(glGetUniformLocation(shader_program, "u_texid"), (float)toupper(text.text[i]) - 32.0f);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+        j++;
     }
 
     glUniform1f(glGetUniformLocation(shader_program, "u_alpha"), 0.0f);
@@ -88,7 +103,7 @@ unsigned int load_texture(char *filepath) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     int width, height, channels;
     unsigned char *data = stbi_load(filepath, &width, &height, &channels, 0); 

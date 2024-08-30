@@ -35,6 +35,9 @@ int init() {
     footer.size = (vec2_t){scr_width, scr_height * 0.27f};
     footer.pos.y = scr_height - footer.size.y;
 
+    alert_lbl.base.pos = (vec2_t){(scr_width - alert_lbl.base.size.x) / 2.0f, (scr_height - footer.size.y - alert_lbl.base.size.y) / 2.0f};
+    alert_lbl.text.text = "Hi, I am an Albanian virus but because of poor technology in my country unfortunately I am not able to harm your computer. Please be so kind to delete one of your important files yourself and then forward me to other users. Many thanks for your cooperation! Best regards,Albanian virus";
+
     cancel_btn.base.pos = (vec2_t){scr_width - cancel_btn.base.size.x - 10.0f, scr_height - cancel_btn.base.size.y - (footer.size.y - cancel_btn.base.size.y) / 2.0f + 2.0f};
     cancel_btn.onclick = &toggle_flag;
     cancel_btn.text.text = "Cancel";

@@ -63,12 +63,12 @@ void init_btn(btn_t *btn) {
 void init_lbl(lbl_t *lbl) {
     *lbl = (lbl_t){0};
 
-    lbl->base.size = (vec2_t){100.0f, 50.0f};
+    lbl->base.size = (vec2_t){550.0f, 65.0f};
     lbl->base.color = (vec4_t){1.0f, 1.0f, 1.0f, 0.0f};
 
-    lbl->text.font_size = (vec2_t){12.2f, 15.0f};
+    lbl->text.font_size = (vec2_t){9.0f, 11.5f};
     lbl->text.font_color = (vec4_t){0.0f, 0.0f, 0.0f, 1.0f};
-    lbl->text.text = "01234567890123456789";
+    lbl->text.text = "Label";
 
     lbl_list_len++;
     lbl_list = (lbl_t**)realloc(lbl_list, lbl_list_len * sizeof(lbl_t*));
